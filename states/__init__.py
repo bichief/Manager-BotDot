@@ -1,1 +1,1 @@
-from .test import Test
+from .get_info import GetInfo
