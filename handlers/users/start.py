@@ -1,24 +1,24 @@
 from aiogram import types
-from aiogram.dispatcher.filters import CommandStart
+from aiogram.dispatcher.filters.builtin import CommandStart, Text
 
+from keyboards.default.get_number import num
+from keyboards.inline.main_menu import menu
 from loader import dp
-from utils.db_api.db_commands import select_client, create_client
+from utils.db_api.db_commands import select_manager
 
 
 @dp.message_handler(CommandStart())
-async def bot_start_no_state(message: types.Message):
-    user_id = message.from_user.id
-    user = await select_client(user_id)
-    if not user:
-        await create_client(username=message.from_user.username, telegram_id=user_id)
-        await message.answer("\n".join(
-            [
-                f'Вы добалены в базу данных'
-            ]
-        ))
+async def bot_start(message: types.Message):
+    manager = await select_manager(telegram_id=message.chat.id)
+    if len(manager) != 0:
+        keyboard = await menu(telegram_id=message.chat.id)
+        await message.answer('Добро пожаловать в главное меню!', reply_markup=keyboard)
     else:
-        await message.answer("\n".join(
-            [
-                f'Вы уже есть в базе данных'
-            ]
-        ))
+        await message.answer(f"Привет, {message.from_user.full_name}!\n\n"
+                             f"Нажми на кнопку ниже, чтобы оставить свой номер.", reply_markup=num)
+
+
+@dp.callback_query_handler(Text(equals='menu'))
+async def go_menu(call: types.CallbackQuery):
+    keyboard = await menu(telegram_id=call.from_user.id)
+    await call.message.edit_text('Добро пожаловать в главное меню!', reply_markup=keyboard)

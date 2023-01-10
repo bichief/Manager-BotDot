@@ -1,8 +1,8 @@
+import asyncio
 import os
 
+import aioschedule
 import django
-
-from utils.set_bot_commands import set_default_commands
 
 
 async def on_startup(dp):
@@ -14,7 +14,13 @@ async def on_startup(dp):
     from utils.notify_admins import on_startup_notify
 
     await on_startup_notify(dp)
-    await set_default_commands(dp)
+
+
+async def scheduler():
+    aioschedule.every(1).minutes.do(parse_votes)
+    while True:
+        await aioschedule.run_pending()
+        await asyncio.sleep(1)
 
 
 def setup_django():
@@ -28,6 +34,12 @@ def setup_django():
 
 if __name__ == '__main__':
     setup_django()
+
+    from message_parser import parse_votes
+
+    loop = asyncio.get_event_loop()
+    loop.create_task(scheduler())
+
     from aiogram import executor
     from handlers import dp
 
